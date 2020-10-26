@@ -242,7 +242,7 @@ if (Options.test) {
             }
         });
         port.flush();
-    }, 50)
+    }, 5)
 } else {
     setStatus(`Connecting to serial port at ${Options.device} (speed ${Options.baud})`);
     port = new SerialPort(Options.device, {baud: Options.baud});
