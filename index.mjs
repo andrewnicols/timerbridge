@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import Blessed from 'blessed';
 
 import Net from 'net';
@@ -247,7 +249,6 @@ if (Options.test) {
     setStatus(`Connecting to serial port at ${Options.device} (speed ${Options.baud})`);
     port = new SerialPort(Options.device, {baud: Options.baud});
 }
-
 
 listen({
     port,
