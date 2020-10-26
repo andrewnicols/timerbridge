@@ -1,41 +1,54 @@
 import Readline from '@serialport/parser-readline';
 import Net from 'net';
 
+import Blessed from 'blessed';
+
+let client = null;
+let screen = null;
+
+const setStatus = statusText => {
+    screen.data.log.add(statusText);
+};
+
 const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
-    let client;
-
-    const setupClientListeners = () => {
-        client.on('end', () => {
-            console.log(`Connection closed by remote side.`);
-            client = null;
-        });
-
-        client.on('close', () => {
-            if (client && !client.pending) {
-                console.log(`Connection closed`);
-                client = null;
-            }
-        });
-
-        client.on('error', () => {
-            if (client && !client.connecting) {
-                client = null;
-            }
-        });
-    };
-
     const connectToClient = () => {
-        if (client) {
-            return;
-        }
+        return new Promise(resolve => {
+            if (client) {
+                if (client.readyState !== 'open' && !client.connecting) {
+                    client.connect(apiPort, apiAddress);
+                }
 
-        client = new Net.Socket();
-        setupClientListeners();
+                resolve(client);
+                return;
+            }
 
-        client.connect(apiPort, apiAddress, () => {
-            console.log(`Connected to ${apiAddress}:${apiPort}`);
+            client = new Net.Socket();
+
+            client.on('error', () => {
+                if (client && !client.connecting) {
+                    client.connect(apiPort, apiAddress);
+                }
+            });
+
+            client.on('ready', () => {
+                setStatus(`Connected to ${apiAddress}:${apiPort}`);
+
+                resolve(client);
+            });
+
+            client.on('end', () => {
+                setStatus(`Connection closed by remote side.`);
+            });
+
+            client.on('close', () => {
+                if (client && !client.pending) {
+                    setStatus(`Connection closed`);
+                }
+            });
+
+            setStatus(`Connecting to ${apiAddress}:${apiPort}`);
+            client.connect(apiPort, apiAddress);
         });
-
     };
 
     const disconnectFromClient = () => {
@@ -48,41 +61,106 @@ const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
      * @param   {String} titleData The value to set
      */
     const updateTitle = titleData => {
-        if (!client || client.destroyed) {
+        if (!client) {
+            setStatus("NO client");
+            return;
+        }
+
+            connectToClient();
+        if (client.destroyed) {
+            setStatus("The client was destroyed. Reconnecting.");
+            client = null;
             connectToClient();
 
             return;
         }
 
         if (client.pending) {
-            console.log(`Unable to set title to ${titleData}. Connection to vMix ${apiAddress}:${apiPort}/${inputId} not ready.`);
+            setStatus(`Unable to set title to ${titleData}. Connection to vMix ${apiAddress}:${apiPort}/${inputId} not ready.`);
 
             return;
         }
 
-        if (client.connecting) {
-            return;
-        }
-
-        console.debug(titleData);
         client.write(`FUNCTION SetText Input=${inputId}&SelectedName=${fieldName}&Value=${titleData}\r\n`);
+        screen.data.remoteTimeBox.setContent(titleData);
     };
 
-    let lastResponse = '';
+    return {connectToClient, disconnectFromClient, updateTitle};
+};
 
-    /**
-     * Update the title if has changed.
-     *
-     * @param   {String} titleData The value to set
-     */
-    const updateTitleIfChanged = titleData => {
-        if (lastResponse !== titleData) {
-            lastResponse = titleData;
-            updateTitle(titleData);
+const setupScreen = () => {
+    screen = Blessed.screen({smartCSR: true});
+    screen.title = 'Farmtek Polaris Timer Bridge to vMix';
+
+    // Quit on Escape, q, or Control-C.
+    screen.key(['escape', 'q', 'C-c'], function(ch, key) {
+        return process.exit(0);
+    });
+
+    screen.data.timeBox = Blessed.bigtext({
+        label: "Timer data",
+        top: 0,
+        left: 0,
+        align: 'right',
+        width: '40%',
+        height: '35%',
+        content: '0.00',
+        tags: true,
+        border: {
+            type: 'line'
+        },
+        style: {
+            fg: 'white',
+            bg: 'magenta',
+            border: {
+                fg: '#f0f0f0'
+            },
+            hover: {
+                bg: 'green'
+            }
         }
-    };
+    });
+    screen.append(screen.data.timeBox);
 
-    return {connectToClient, disconnectFromClient, updateTitle, updateTitleIfChanged};
+    screen.data.remoteTimeBox = Blessed.bigtext({
+        label: "Data sent to vMix",
+        top: 0,
+        right: 0,
+        align: 'right',
+        width: '40%',
+        height: '35%',
+        content: '0.00',
+        tags: true,
+        border: {
+            type: 'line'
+        },
+        style: {
+            fg: 'white',
+            bg: 'magenta',
+            border: {
+                fg: '#f0f0f0'
+            },
+            hover: {
+                bg: 'green'
+            }
+        }
+    });
+    screen.append(screen.data.remoteTimeBox);
+
+    screen.data.log = Blessed.log({
+        bottom: '0',
+        left: 'center',
+        height: '50%',
+        width: '100%',
+        tags: true,
+        border: {
+            type: 'line',
+        },
+    });
+    screen.append(screen.data.log);
+    screen.data.log.focus();
+
+    screen.render();
 };
 
 /**
@@ -101,13 +179,41 @@ export default ({
     inputId = 1,
     fieldName = 'Clock.text',
 } = {}) => {
-    const {connectToClient, updateTitle, updateTitleIfChanged} = getClientConnector({apiAddress, apiPort, inputId, fieldName});
-    connectToClient();
+    const {connectToClient, updateTitle} = getClientConnector({apiAddress, apiPort, inputId, fieldName});
 
-    if (port.pipe) {
-        const parser = port.pipe(new Readline({ delimiter: '\r\n' }))
-        parser.on('data', updateTitleIfChanged)
-    } else {
-        port.on('data', updateTitleIfChanged)
-    }
+    setupScreen();
+
+    let lastResponse = '';
+
+    /**
+     * Update the title if has changed.
+     *
+     * @param   {String} titleData The value to set
+     */
+    const updateTitleIfChanged = titleData => {
+        if (lastResponse !== titleData) {
+            lastResponse = titleData;
+            updateTitle(titleData);
+        }
+
+        screen.data.timeBox.setContent(titleData);
+        screen.render();
+    };
+
+
+    return connectToClient()
+    .then(client => {
+        if (port.pipe) {
+            const parser = port.pipe(new Readline({ delimiter: '\r\n' }))
+            if (parser) {
+                return parser;
+            }
+        }
+        return Promise.resolve(port);
+    })
+    .then(pipe => {
+        pipe.on('data', updateTitleIfChanged)
+
+        return pipe;
+    });
 };

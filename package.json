@@ -19,7 +19,9 @@
     "virtual-serialport": "git+https://github.com/reyiyo/virtual-serialport.git"
   },
   "dependencies": {
+    "blessed": "^0.1.81",
+    "net": "^1.0.2",
     "serialport": "^9.0.2",
-    "net": "^1.0.2"
+    "yargs": "^16.1.0"
   }
 }
