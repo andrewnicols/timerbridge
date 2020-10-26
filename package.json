@@ -1,0 +1,25 @@
+{
+  "name": "timerbridge",
+  "version": "1.0.0",
+  "description": "Farmtek Polaris to vMix Bridge",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "farmtek",
+    "polaris",
+    "vmix",
+    "scoreboard",
+    "time"
+  ],
+  "author": "Andrew Nicols",
+  "license": "ISC",
+  "devDependencies": {
+    "virtual-serialport": "git+https://github.com/reyiyo/virtual-serialport.git"
+  },
+  "dependencies": {
+    "serialport": "^9.0.2",
+    "net": "^1.0.2"
+  }
+}
