@@ -5,32 +5,49 @@ export default Yargs(process.argv.slice(2))
     .help('h')
     .alias('h', 'help')
 
-    .describe('d', 'Path to input device')
-    .nargs('d', 1)
-    .alias('d', 'device')
+    .options({
+        device: {
+            description: 'Path to input device',
+            alias: 'd',
+            nargs: 1,
+        },
 
-    .describe('baud', 'Baud Rate for Farmtek connection')
-    .nargs('baud', 1)
-    .default('baud', 4800)
+        baud: {
+            description: 'Baud Rate for Farmtek connection',
+            default: 4800,
+        },
 
-    .describe('vmix', 'Address of vMix server')
-    .nargs('vmix', 1)
-    .default('vmix', '127.0.0.1')
+        vmix: {
+            description: 'Address of vMix server',
+            default: '127.0.0.1',
+            alias: 'a',
+        },
 
-    .describe('port', 'vMix Port')
-    .nargs('port', 1)
-    .default('port', 8099)
+        port: {
+            description: 'vMix Port',
+            default: 8099,
+            alias: 'p',
+        },
 
-    .describe('vmixinput', 'vMix Video Input')
-    .nargs('vmixinput', 1)
-    .alias('vmixinput', 'i')
-    .default('vmixinput', 1)
+        vmixinput: {
+            description:'vMix Video Input',
+            alias: 'i',
+            default: 1,
+        },
 
-    .describe('fieldname', 'vMix Title Name')
-    .nargs('fieldname', 1)
-    .alias('fieldname', 'f')
-    .default('fieldname', 'Clock.text')
+        fieldname: {
+            description: 'vMix Title Name',
+            alias: 'f',
+            default: 'Clock.text',
+        },
 
-    .demandOption(['d'])
+        test: {
+            description: 'Send test data',
+            alias: 't',
+            default: false,
+            boolean: true,
+            bool: true,
+        },
+    })
 
     .argv;
