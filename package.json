@@ -14,14 +14,12 @@
     "time"
   ],
   "author": "Andrew Nicols",
-  "license": "ISC",
-  "devDependencies": {
-    "virtual-serialport": "git+https://github.com/reyiyo/virtual-serialport.git"
-  },
+  "license": "GPLv3",
   "dependencies": {
     "blessed": "^0.1.81",
     "net": "^1.0.2",
     "serialport": "^9.0.2",
+    "virtual-serialport": "git+https://github.com/reyiyo/virtual-serialport.git",
     "yargs": "^16.1.0"
   }
 }
