@@ -8,6 +8,84 @@ let screen = null;
 
 const setStatus = statusText => {
     screen.data.log.add(statusText);
+    screen.log(statusText);
+};
+
+const setupScreen = () => {
+    screen = Blessed.screen({
+        smartCSR: true,
+        log: './listen.log',
+    });
+
+    screen.title = 'Farmtek Polaris Timer Bridge to vMix';
+
+    // Quit on Escape, q, or Control-C.
+    screen.key(['escape', 'q', 'C-c'], function(ch, key) {
+        return process.exit(0);
+    });
+
+    screen.data.timeBox = Blessed.bigtext({
+        label: "Timer data",
+        top: 0,
+        left: 0,
+        width: '50%',
+        height: '35%',
+        content: '0.00',
+        tags: true,
+        border: {
+            type: 'line'
+        },
+        style: {
+            fg: 'white',
+            bg: 'magenta',
+            border: {
+                fg: '#f0f0f0'
+            },
+            hover: {
+                bg: 'green'
+            }
+        }
+    });
+    screen.append(screen.data.timeBox);
+
+    screen.data.remoteTimeBox = Blessed.bigtext({
+        label: "Data sent to vMix",
+        top: '40%',
+        left: 0,
+        width: '50%',
+        height: '35%',
+        content: '0.00',
+        tags: true,
+        border: {
+            type: 'line'
+        },
+        style: {
+            fg: 'white',
+            bg: 'magenta',
+            border: {
+                fg: '#f0f0f0'
+            },
+            hover: {
+                bg: 'green'
+            }
+        }
+    });
+    screen.append(screen.data.remoteTimeBox);
+
+    screen.data.log = Blessed.log({
+        bottom: '0',
+        left: '60%',
+        height: '100%',
+        width: '40%',
+        tags: true,
+        border: {
+            type: 'line',
+        },
+    });
+    screen.append(screen.data.log);
+    screen.data.log.focus();
+
+    screen.render();
 };
 
 const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
@@ -82,85 +160,11 @@ const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
         }
 
         client.write(`FUNCTION SetText Input=${inputId}&SelectedName=${fieldName}&Value=${titleData}\r\n`);
-        screen.data.remoteTimeBox.setContent(titleData);
+        screen.data.remoteTimeBox.setContent(titleData + '');
+        screen.log(`Remote time set to ${titleData}`);
     };
 
     return {connectToClient, disconnectFromClient, updateTitle};
-};
-
-const setupScreen = () => {
-    screen = Blessed.screen({smartCSR: true});
-    screen.title = 'Farmtek Polaris Timer Bridge to vMix';
-
-    // Quit on Escape, q, or Control-C.
-    screen.key(['escape', 'q', 'C-c'], function(ch, key) {
-        return process.exit(0);
-    });
-
-    screen.data.timeBox = Blessed.bigtext({
-        label: "Timer data",
-        top: 0,
-        left: 0,
-        align: 'right',
-        width: '40%',
-        height: '35%',
-        content: '0.00',
-        tags: true,
-        border: {
-            type: 'line'
-        },
-        style: {
-            fg: 'white',
-            bg: 'magenta',
-            border: {
-                fg: '#f0f0f0'
-            },
-            hover: {
-                bg: 'green'
-            }
-        }
-    });
-    screen.append(screen.data.timeBox);
-
-    screen.data.remoteTimeBox = Blessed.bigtext({
-        label: "Data sent to vMix",
-        top: 0,
-        right: 0,
-        align: 'right',
-        width: '40%',
-        height: '35%',
-        content: '0.00',
-        tags: true,
-        border: {
-            type: 'line'
-        },
-        style: {
-            fg: 'white',
-            bg: 'magenta',
-            border: {
-                fg: '#f0f0f0'
-            },
-            hover: {
-                bg: 'green'
-            }
-        }
-    });
-    screen.append(screen.data.remoteTimeBox);
-
-    screen.data.log = Blessed.log({
-        bottom: '0',
-        left: 'center',
-        height: '50%',
-        width: '100%',
-        tags: true,
-        border: {
-            type: 'line',
-        },
-    });
-    screen.append(screen.data.log);
-    screen.data.log.focus();
-
-    screen.render();
 };
 
 /**
@@ -196,7 +200,8 @@ export default ({
             updateTitle(titleData);
         }
 
-        screen.data.timeBox.setContent(titleData);
+        screen.data.timeBox.setContent(titleData + '');
+        screen.debug(`Local time is ${titleData}`);
         screen.render();
     };
 
