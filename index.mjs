@@ -3,7 +3,7 @@
 import Blessed from 'blessed';
 
 import Net from 'net';
-import Options from './options.mjs';
+import argv from './options.mjs';
 import Readline from '@serialport/parser-readline';
 import SerialPort  from 'serialport';
 import VirtualSerialPort from 'virtual-serialport';
@@ -54,7 +54,7 @@ const setupScreen = () => {
     screen.append(screen.data.timeBox);
 
     screen.data.remoteTimeBox = Blessed.bigtext({
-        label: `Data sent to vMix at ${Options.vmix}:${Options.port}/${Options.vmixinput} ${Options.fieldname}`,
+        label: `Data sent to vMix at ${argv.vmix}:${argv.port}/${argv.vmixinput} ${argv.fieldname}`,
         top: '40%',
         left: 0,
         width: '50%',
@@ -229,9 +229,9 @@ const listen = ({
 setupScreen();
 
 let port;
-if (Options.test) {
-    setStatus(`Connecting to virtual serial port at ${Options.device} (speed ${Options.baud})`);
-    port = new VirtualSerialPort(Options.device, {baud: Options.baud});
+if (argv.test) {
+    setStatus(`Connecting to virtual serial port at ${argv.device} (speed ${argv.baud})`);
+    port = new VirtualSerialPort(argv.device, {baud: argv.baud});
 
     const startTime = Date.now();
 
@@ -246,14 +246,14 @@ if (Options.test) {
         port.flush();
     }, 5)
 } else {
-    setStatus(`Connecting to serial port at ${Options.device} (speed ${Options.baud})`);
-    port = new SerialPort(Options.device, {baud: Options.baud});
+    setStatus(`Connecting to serial port at ${argv.device} (speed ${argv.baud})`);
+    port = new SerialPort(argv.device, {baud: argv.baud});
 }
 
 listen({
     port,
-    apiAddress: Options.vmix,
-    apiPort: Options.port,
-    inputId: Options.vmixinput,
-    fieldName: Options.fieldname,
+    apiAddress: argv.vmix,
+    apiPort: argv.port,
+    inputId: argv.vmixinput,
+    fieldName: argv.fieldname,
 });
