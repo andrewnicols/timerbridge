@@ -3,7 +3,7 @@
 import Blessed from 'blessed';
 
 import Net from 'net';
-import argv from './options.mjs';
+import argv from './src/options.mjs';
 import Readline from '@serialport/parser-readline';
 import SerialPort  from 'serialport';
 import VirtualSerialPort from 'virtual-serialport';
