@@ -1,97 +1,14 @@
 #!/usr/bin/env node
 
-import Blessed from 'blessed';
-
 import Net from 'net';
 import argv from './src/options.mjs';
 import Readline from '@serialport/parser-readline';
 import SerialPort  from 'serialport';
 import VirtualSerialPort from 'virtual-serialport';
+import Frontend from './src/frontend.mjs';
+import UI from './src/ui.mjs';
 
 let client = null;
-let screen = null;
-
-const setStatus = statusText => {
-    screen.data.log.add(statusText);
-    screen.log(statusText);
-};
-
-const setupScreen = () => {
-    screen = Blessed.screen({
-        smartCSR: true,
-        log: './listen.log',
-    });
-
-    screen.title = 'Farmtek Polaris Timer Bridge to vMix';
-
-    // Quit on Escape, q, or Control-C.
-    screen.key(['escape', 'q', 'C-c'], function(ch, key) {
-        return process.exit(0);
-    });
-
-    screen.data.timeBox = Blessed.bigtext({
-        label: "Timer data",
-        top: 0,
-        left: 0,
-        width: '50%',
-        height: '35%',
-        content: '0.00',
-        tags: true,
-        border: {
-            type: 'line'
-        },
-        style: {
-            fg: 'white',
-            bg: 'magenta',
-            border: {
-                fg: '#f0f0f0'
-            },
-            hover: {
-                bg: 'green'
-            }
-        }
-    });
-    screen.append(screen.data.timeBox);
-
-    screen.data.remoteTimeBox = Blessed.bigtext({
-        label: `Data sent to vMix at ${argv.vmix}:${argv.port}/${argv.vmixinput} ${argv.fieldname}`,
-        top: '40%',
-        left: 0,
-        width: '50%',
-        height: '35%',
-        content: '0.00',
-        tags: true,
-        border: {
-            type: 'line'
-        },
-        style: {
-            fg: 'white',
-            bg: 'magenta',
-            border: {
-                fg: '#f0f0f0'
-            },
-            hover: {
-                bg: 'green'
-            }
-        }
-    });
-    screen.append(screen.data.remoteTimeBox);
-
-    screen.data.log = Blessed.log({
-        bottom: '0',
-        left: '60%',
-        height: '100%',
-        width: '40%',
-        tags: true,
-        border: {
-            type: 'line',
-        },
-    });
-    screen.append(screen.data.log);
-    screen.data.log.focus();
-
-    screen.render();
-};
 
 const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
     const connectToClient = () => {
@@ -114,22 +31,22 @@ const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
             });
 
             client.on('ready', () => {
-                setStatus(`Connected to ${apiAddress}:${apiPort}`);
+                frontend.addLog(`Connected to ${apiAddress}:${apiPort}`);
 
                 resolve(client);
             });
 
             client.on('end', () => {
-                setStatus(`Connection closed by remote side.`);
+                frontend.addLog(`Connection closed by remote side.`);
             });
 
             client.on('close', () => {
                 if (client && !client.pending) {
-                    setStatus(`Connection closed`);
+                    frontend.addLog(`Connection closed`);
                 }
             });
 
-            setStatus(`Connecting to ${apiAddress}:${apiPort}`);
+            frontend.addLog(`Connecting to ${apiAddress}:${apiPort}`);
             client.connect(apiPort, apiAddress);
         });
     };
@@ -145,13 +62,13 @@ const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
      */
     const updateTitle = titleData => {
         if (!client) {
-            setStatus("NO client");
+            frontend.addLog("NO client");
             return;
         }
 
             connectToClient();
         if (client.destroyed) {
-            setStatus("The client was destroyed. Reconnecting.");
+            frontend.addLog("The client was destroyed. Reconnecting.");
             client = null;
             connectToClient();
 
@@ -159,14 +76,13 @@ const getClientConnector = ({apiAddress, apiPort, inputId, fieldName}) => {
         }
 
         if (client.pending) {
-            setStatus(`Unable to set title to ${titleData}. Connection to vMix ${apiAddress}:${apiPort}/${inputId} not ready.`);
+            frontend.addLog(`Unable to set title to ${titleData}. Connection to vMix ${apiAddress}:${apiPort}/${inputId} not ready.`);
 
             return;
         }
 
         client.write(`FUNCTION SetText Input=${inputId}&SelectedName=${fieldName}&Value=${titleData}\r\n`);
-        screen.data.remoteTimeBox.setContent(titleData + '');
-        screen.log(`Remote time set to ${titleData}`);
+        frontend.setRemoteTime(titleData);
     };
 
     return {connectToClient, disconnectFromClient, updateTitle};
@@ -203,9 +119,7 @@ const listen = ({
             updateTitle(titleData);
         }
 
-        screen.data.timeBox.setContent(titleData + '');
-        screen.debug(`Local time is ${titleData}`);
-        screen.render();
+        frontend.setLocalTime(titleData);
     };
 
 
@@ -226,16 +140,16 @@ const listen = ({
     });
 };
 
-setupScreen();
+const frontend = argv.pretty ? new UI(argv) : new Frontend(argv);
 
 let port;
 if (argv.test) {
-    setStatus(`Connecting to virtual serial port at ${argv.device} (speed ${argv.baud})`);
+    frontend.addLog(`Connecting to virtual serial port at ${argv.device} (speed ${argv.baud})`);
     port = new VirtualSerialPort(argv.device, {baud: argv.baud});
 
     const startTime = Date.now();
 
-    setStatus(`Generating test data`);
+    frontend.addLog(`Generating test data`);
     setInterval(() => {
         const timeNow = Math.round((Date.now() - startTime) / 10) / 100;
         port.writeToComputer(`${timeNow}`, err => {
@@ -246,7 +160,7 @@ if (argv.test) {
         port.flush();
     }, 5)
 } else {
-    setStatus(`Connecting to serial port at ${argv.device} (speed ${argv.baud})`);
+    frontend.addLog(`Connecting to serial port at ${argv.device} (speed ${argv.baud})`);
     port = new SerialPort(argv.device, {baud: argv.baud});
 }
 

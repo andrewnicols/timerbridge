@@ -48,6 +48,12 @@ export default Yargs(process.argv.slice(2))
             boolean: true,
             bool: true,
         },
+
+        pretty: {
+            description: 'Use a pretty interface for display',
+            default: true,
+            boolean: true,
+        }
     })
 
     .argv;
