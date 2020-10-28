@@ -1,8 +1,7 @@
 import Blessed from 'blessed';
+import UI from './ui.mjs';
 
-import Frontend from './frontend.mjs';
-
-export default class extends Frontend {
+export default class extends UI {
     constructor(argv = {}) {
         super(argv);
 

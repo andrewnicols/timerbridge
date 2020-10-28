@@ -1,8 +1,6 @@
-export default class {
-    constructor(argv = {}) {
-        this.argv = argv;
-    }
+import UI from './ui.mjs';
 
+export default class extends UI {
     addLog(statusText) {
         console.log(statusText);
     }
