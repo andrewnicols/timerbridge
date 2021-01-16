@@ -34,7 +34,7 @@ const listen = (port, argv, frontend, output) => {
     return output.ready()
     .then(client => {
         if (port.pipe) {
-            const parser = port.pipe(new Readline({ delimiter: '\r\n' }))
+            const parser = port.pipe(new Readline({ delimiter: '\r', encoding: 'latin1'  }))
             if (parser) {
                 return parser;
             }
