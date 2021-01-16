@@ -37,4 +37,4 @@ The official cable is available [direct from Farmtek](https://farmtek.net/comput
 The Output on the Farmtek console has three pins which are known as the "Tip", "Ring", and "Sleeve":
 * Tip: Not used (This carries the data sent to the official Farmtek Scoreboard)
 * Ring: Data pin carrying data from the Farmtek console. Connect to RCV pin on Serial port (DB-9 pin 2)
-* Sleeve: Ground connectio. Connect to GND pin on Serial port (DB-9 pin 4)
+* Sleeve: Ground connection. Connect to GND pin on Serial port (DB-9 pin 4)
