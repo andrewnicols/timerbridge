@@ -79,7 +79,7 @@ export const run = async() => {
         }, 5)
     } else {
         frontend.addLog(`Connecting to serial port at ${argv.device} (speed ${argv.baud})`);
-        port = new SerialPort(argv.device, {baud: argv.baud});
+        port = new SerialPort(argv.device, {baudRate: argv.baud});
     }
 
     listen(port, argv, frontend, output);
